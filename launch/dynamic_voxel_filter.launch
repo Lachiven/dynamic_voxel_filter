@@ -1,0 +1,8 @@
+<launch>
+	<param name="use_sim_time" value="true"/>
+	
+	<node pkg="dynamic_voxel_filter" type="dynamic_voxel_filter" name="dynamic_voxel_filter" output="screen"/>
+
+	<node pkg="rosbag" name="player" type="play" args="--clock /home/amsl/bagfiles/cats/2019/cats_meets_cat_2019-05-16-16-47-20.bag"/>
+	<node pkg="rviz" name="rviz" type="rviz" args="-d /home/amsl/.rviz/nagayne_pointcloud_v2.rviz"/>
+</launch>
