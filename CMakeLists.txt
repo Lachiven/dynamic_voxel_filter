@@ -32,6 +32,7 @@ if(OPENMP_FOUND)
 endif()
 
 find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS thread)
 find_package(Eigen3 REQUIRED COMPONENTS system)
 include_directories(${Eigen_INCLUDE_DIRS})
 

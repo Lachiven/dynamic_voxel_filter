@@ -1,10 +1,7 @@
-#include <ros/ros.h>
 #include <iostream>
-#include <omp.h>
 
+#include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/PointCloud.h>
-#include <sensor_msgs/point_cloud_conversion.h>
 #include <nav_msgs/Odometry.h>
 
 #include <pcl/point_types.h>
@@ -27,23 +24,34 @@
 #include "Eigen/LU"
 
 #include <boost/thread.hpp>
+#include <boost/multi_array.hpp>
 
+
+#define MAX_RANGE_X 100
+#define MAX_RANGE_Y 100
+#define MAX_RANGE_Z 10
+
+#define VOXEL_NUM_X 500
+#define VOXEL_NUM_Y 500
+#define VOXEL_NUM_Z 50
+
+#define MEMORY_SIZE 5
 
 typedef pcl::PointXYZI PointI;
 typedef pcl::PointCloud<PointI> CloudI;
 typedef pcl::PointCloud<PointI>::Ptr CloudIPtr;
 
-typedef pcl::PointXYZINormal PointTEvec;
-typedef pcl::PointCloud<PointTEvec> CloudTEvec;
-typedef pcl::PointCloud<PointTEvec>::Ptr CloudTEvecPtr; // I:Time, Normal:Eigen vector
+typedef pcl::PointXYZINormal PointIVoxel;
+typedef pcl::PointCloud<PointIVoxel> CloudIVoxel;
+typedef pcl::PointCloud<PointIVoxel>::Ptr CloudIVoxelPtr; // I:Time, Normal:voxel position
 
-typedef pcl::PointXYZINormal PointTPos;
-typedef pcl::PointCloud<PointTPos> CloudTPos;
-typedef pcl::PointCloud<PointTPos>::Ptr CloudTPosPtr; // I:Time, Normal:voxel position
-
-typedef pcl::PointXYZHSV PointITV; // h:Intensity, s:Time, v:Variance
-typedef pcl::PointCloud<PointITV> CloudITV;
-typedef pcl::PointCloud<PointITV>::Ptr CloudITVPtr;
+struct State{
+	int occupatoin;
+	Eigen::Vector3f vector;
+};
+//typedef boost::multi_array<Eigen::Vector3f, 3> MultiArrayEVec3f;
+typedef boost::multi_array<State, 3> MultiArrayEVec3f;
+MultiArrayEVec3f pca3rd_voxel(boost::extents[VOXEL_NUM_X][VOXEL_NUM_Y][VOXEL_NUM_Z]);
 
 
 class DynamicVoxelFilter
@@ -54,32 +62,24 @@ class DynamicVoxelFilter
 		void pc_callback(const sensor_msgs::PointCloud2ConstPtr&);
 		void odom_callback(const nav_msgs::OdometryConstPtr&);
 		void execution(void);
-		Eigen::Matrix3f eigen_estimation(CloudTPosPtr);
-		CloudTPosPtr pc_addressing(CloudTPosPtr);
-		void input_pt2Voxel(CloudTPosPtr);
-		void voxel_shooting(void);
-		void judge(void);
-
+		Eigen::Matrix3f eigen_estimation(CloudIVoxelPtr);
+		CloudIVoxelPtr pc_addressing(CloudIVoxelPtr);
+		void input_pt2voxel(CloudIVoxelPtr);
+		void input_pca3rd2voxel(void);
+		void chronological_pca3rd_variance_calculation(void);
+	
 	private:
 		bool pc_callback_flag = false;
 		bool odom_callback_flag = false;
 		bool tf_listen_flag = false;
 		bool first_flag = false;
 
-		const char *str_x = "normal_x";
-		const char *str_y = "normal_y";
-		const char *str_z = "normal_z";
-		const char* filter_str[3] = {str_x, str_y, str_z};
-
 		const static int X = 0, Y = 1, Z = 2;
-		const static int voxel_num_x = 500, voxel_num_y = 500, voxel_num_z = 50;
-		
-		int filter_length[3] = {voxel_num_x/2, voxel_num_y/2, voxel_num_z/2};
-
-		float Hz = 100.0;
-		float voxel_size_x = 0.2, voxel_size_y = 0.2, voxel_size_z = 0.2;
-
-		std::vector<CloudITVPtr> shot_voxel_list;
+		const static int Occupied = 1, Unoccupied = 0, Unknown = -1;
+		const float Hz = 100.0;
+		const float voxel_size_x = MAX_RANGE_X / VOXEL_NUM_X,
+					voxel_size_y = MAX_RANGE_Y / VOXEL_NUM_Y,
+					voxel_size_z = MAX_RANGE_Z / VOXEL_NUM_Z;
 
 		ros::Subscriber pc_subscriber;
 		ros::Subscriber odom_subscriber;
@@ -93,18 +93,18 @@ class DynamicVoxelFilter
 		tf::TransformListener listener;
 		tf::StampedTransform transform;
 
-		//PointCloud
-		CloudIPtr input_I_pc_ {new CloudI};
-		CloudTPosPtr positioning_pc_ {new CloudTPos}; // T:Time, Pos:.normal_x,y,z <=> voxel position x,y,z
-		CloudTPosPtr input_TPos_pc_ {new CloudTPos}; // I:Intensity, T:Time, V:Variance
-		CloudTPosPtr transformed_TPos_pc_ {new CloudTPos}; // I:Intensity, T:Time, V:Variance
-		CloudTPosPtr addressed_TPos_pc_ {new CloudTPos}; // I:Intensity, T:Time, V:Variance
+		// PointCloud
+		CloudIPtr input_intensity_pc_ {new CloudI};
+		CloudIVoxelPtr intensity_normal_pc_ {new CloudIVoxel};
+		CloudIVoxelPtr transformed_intensity_normal_pc_ {new CloudIVoxel};
+		CloudIVoxelPtr addressed_pc_ {new CloudIVoxel};
 
-		//Voxel
-		CloudTPosPtr Voxel[voxel_num_x][voxel_num_y][voxel_num_z]; // storage pc_Ptr according to voxel address
-		CloudTEvecPtr Evec_Voxel[voxel_num_x][voxel_num_y][voxel_num_z]; // storage eigen vectors
-		
-		//Eigen::Matrix3f eigenVectorsPCA;
+		// Voxel
+		CloudIVoxelPtr Voxel[VOXEL_NUM_X][VOXEL_NUM_Y][VOXEL_NUM_Z]; // storage pc_ according to voxel address
+		Eigen::Vector3f chronological_variance; // storage PCA 3rd vectors
+
+		// Memory
+		std::vector<MultiArrayEVec3f> pca3rd_chronological_memories;
 };
 
 
@@ -149,25 +149,14 @@ void DynamicVoxelFilter::execution(void)
     	}
 
 		if(pc_callback_flag && odom_callback_flag && tf_listen_flag){
-			pcl::toROSMsg(*input_TPos_pc_, tmp_pc);
+			pcl::toROSMsg(*intensity_normal_pc_, tmp_pc);
 			pcl_ros::transformPointCloud("/odom", tmp_pc, transformed_pc, listener);
-			pcl::fromROSMsg(transformed_pc, *transformed_TPos_pc_);
+			pcl::fromROSMsg(transformed_pc, *transformed_intensity_normal_pc_);
 			
-			addressed_TPos_pc_ = pc_addressing(transformed_TPos_pc_);
-			input_pt2Voxel(addressed_TPos_pc_);
-			
-			for(int xv=0; xv<voxel_num_x; xv++){
-				for(int yv=0; yv<voxel_num_y; yv++){
-					for(int zv=0; zv<voxel_num_z; zv++){
-						if((Voxel[xv][yv][zv])->points[0].intensity > 0){
-							
-						}else{
-
-						}
-					}
-				}
-			}
-
+			addressed_pc_ = pc_addressing(transformed_intensity_normal_pc_);
+			input_pt2voxel(addressed_pc_);
+			input_pca3rd2voxel();	
+			chronological_pca3rd_variance_calculation();
 
 
 			first_flag = true;
@@ -182,8 +171,8 @@ void DynamicVoxelFilter::execution(void)
 
 void DynamicVoxelFilter::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg)
 {
-	pcl::fromROSMsg(*msg, *input_I_pc_);
-	pcl::copyPointCloud(*input_I_pc_, *input_TPos_pc_);
+	pcl::fromROSMsg(*msg, *input_intensity_pc_);
+	pcl::copyPointCloud(*input_intensity_pc_, *intensity_normal_pc_);
 	pc_callback_flag = true;
 }
 
@@ -195,7 +184,7 @@ void DynamicVoxelFilter::odom_callback(const nav_msgs::OdometryConstPtr &msg)
 }
 
 
-Eigen::Matrix3f DynamicVoxelFilter::eigen_estimation(CloudTPosPtr pc_in_voxel_)
+Eigen::Matrix3f DynamicVoxelFilter::eigen_estimation(CloudIVoxelPtr pc_in_voxel_)
 {
 	/*
 	Eigen::Vector4f pcaCentroid;
@@ -203,41 +192,40 @@ Eigen::Matrix3f DynamicVoxelFilter::eigen_estimation(CloudTPosPtr pc_in_voxel_)
 	Eigen::Matrix3f covariance;
 	computeCovarianceMatrixNormalized(*pc_in_voxel_, pcaCentroid, covariance);
 	Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(covariance, Eigen::ComputeEigenvectors);
-	Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors();
-	eigenVectorsPCA.col(2) = eigenVectorsPCA.col(0).cross(eigenVectorsPCA.col(1));
+	Eigen::Matrix3f eigen_vectors = eigen_solver.eigenvectors();
+	eigen_vectors.col(2) = eigen_vectors.col(0).cross(eigen_vectors.col(1));
 	*/
 
-	pcl::PCA<PointTPos> pca;
+	pcl::PCA<PointIVoxel> pca;
 	pca.setInputCloud(pc_in_voxel_);
-	Eigen::Matrix3f eigenVectorsPCA = pca.getEigenVectors();
+	Eigen::Matrix3f eigen_vectors = pca.getEigenVectors();
 
-	return eigenVectorsPCA;
+	return eigen_vectors;
 }
 
 
-CloudTPosPtr DynamicVoxelFilter::pc_addressing(CloudTPosPtr input_TPos_pc_)
+CloudIVoxelPtr DynamicVoxelFilter::pc_addressing(CloudIVoxelPtr voxel_pc_)
 {
-	for(auto& pt : input_TPos_pc_->points){
-		pt.normal_x = 0.5 * (float)voxel_num_x + pt.x / voxel_size_x;
-		pt.normal_y = 0.5 * (float)voxel_num_y + pt.x / voxel_size_y;
-		pt.normal_z = 0.5 * (float)voxel_num_z + pt.x / voxel_size_z;
+	for(auto& pt : voxel_pc_->points){
+		pt.normal_x = 0.5 * (float)VOXEL_NUM_X + pt.x / voxel_size_x;
+		pt.normal_y = 0.5 * (float)VOXEL_NUM_Y + pt.x / voxel_size_y;
+		pt.normal_z = 0.5 * (float)VOXEL_NUM_Z + pt.x / voxel_size_z;
 	}
 	
-	return input_TPos_pc_;
+	return voxel_pc_;
 }
 
 
-void DynamicVoxelFilter::input_pt2Voxel(CloudTPosPtr pc_addressed_TPos_)
+void DynamicVoxelFilter::input_pt2voxel(CloudIVoxelPtr pc_addressed_TPos_)
 {
 	for(auto& pt : pc_addressed_TPos_->points){
 		bool xv_flag = false, yv_flag = false, zv_flag = false;
-		
-		for(int xv=0; xv<voxel_num_x; xv++){
-			for(int yv=0; yv<voxel_num_y; yv++){
-				for(int zv=0; zv<voxel_num_z; zv++){
-					CloudTPosPtr tmp_pc_ {new CloudTPos};
+		for(int xv = 0; xv < VOXEL_NUM_X; xv++){
+			for(int yv = 0; yv < VOXEL_NUM_Y; yv++){
+				for(int zv = 0; zv < VOXEL_NUM_Z; zv++){
+					CloudIVoxelPtr tmp_pc_ {new CloudIVoxel};
 					tmp_pc_->points.resize(1);
-					if(xv==(int)pt.normal_x && yv==(int)pt.normal_y && zv==pt.normal_z){
+					if(xv == (int)pt.normal_x && yv == (int)pt.normal_y && zv == pt.normal_z){
 						tmp_pc_->points[0].x = pt.x;
 						tmp_pc_->points[0].y = pt.y;
 						tmp_pc_->points[0].z = pt.z;
@@ -253,9 +241,6 @@ void DynamicVoxelFilter::input_pt2Voxel(CloudTPosPtr pc_addressed_TPos_)
 						xv_flag = true;
 						yv_flag = true;
 						zv_flag = true;
-					}else{
-						tmp_pc_->points[0].intensity = -1.0;
-						*Voxel[xv][yv][zv] = *tmp_pc_;
 					}
 					if(zv_flag) break;
 				}
@@ -268,9 +253,37 @@ void DynamicVoxelFilter::input_pt2Voxel(CloudTPosPtr pc_addressed_TPos_)
 }
 
 
-void DynamicVoxelFilter::voxel_shooting(void)
+void DynamicVoxelFilter::input_pca3rd2voxel(void)
 {
+	for(int xv = 0; xv < VOXEL_NUM_X; xv++){
+		for(int yv = 0; yv < VOXEL_NUM_Y; yv++){
+			for(int zv = 0; zv < VOXEL_NUM_Z; zv++){
+				if((Voxel[xv][yv][zv])->points.size() >= 2){
+					Eigen::Matrix3f pca_vectors = eigen_estimation(Voxel[xv][yv][zv]);
+					pca3rd_voxel[xv][yv][zv].vector = pca_vectors.block(0, 2, 3, 1);
+					pca3rd_voxel[xv][yv][zv].occupatoin = Occupied;
+				}else{
+					Eigen::Vector3f none_pca_vec = Eigen::Vector3f::Zero();
+					pca3rd_voxel[xv][yv][zv].vector = none_pca_vec;
+				}
+			}
+		}
+	}
+}
+
+
+void DynamicVoxelFilter::chronological_pca3rd_variance_calculation(void)
+{
+	pca3rd_chronological_memories.push_back(pca3rd_voxel);
+	if(pca3rd_chronological_memories.size() > MEMORY_SIZE){
+		pca3rd_chronological_memories.erase(pca3rd_chronological_memories.begin());
+	}
 	
 }
+
+
+
+
+
 
 
