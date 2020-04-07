@@ -113,7 +113,7 @@ class DynamicVoxelFilter
 
 int main(int argc, char** argv)
 {
-	ros::init(argc, argv, "pointcloud_lifespan_keeper");
+	ros::init(argc, argv, "dynamic_voxel_filter");
 
 	DynamicVoxelFilter dynamic_voxel_filter;
 	dynamic_voxel_filter.execution();
