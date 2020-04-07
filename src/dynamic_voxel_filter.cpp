@@ -1,4 +1,4 @@
-#include "dynamic_voxel_filter/dynamic_voxel_filter"
+#include "dynamic_voxel_filter/dynamic_voxel_filter.h"
 
 int main(int argc, char** argv)
 {
