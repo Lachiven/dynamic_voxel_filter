@@ -87,17 +87,13 @@ class DynamicVoxelFilter
 		ros::Subscriber odom_subscriber;
 		ros::Publisher dynamic_pc_publisher;
 		ros::Publisher static_pc_publisher;
-
-		nav_msgs::Odometry odom;
-		sensor_msgs::PointCloud2 tmp_pc;
-		sensor_msgs::PointCloud2 transformed_pc;
 		
 		tf::TransformListener listener;
 		tf::StampedTransform transform;
 
 		// PointCloud
-		CloudIVoxelPtr intensity_normal_pc_ {new CloudIVoxel};
-		CloudIVoxelPtr transformed_intensity_normal_pc_ {new CloudIVoxel};
+        sensor_msgs::PointCloud2 input_pc;
+        CloudINormalPtr pcl_input_pc {new CloudINormal};
 		CloudIVoxelPtr addressed_pc_ {new CloudIVoxel};
 
 		// Voxel
@@ -107,13 +103,14 @@ class DynamicVoxelFilter
 		// Memory
 		std::vector<MultiArrayEVec3f> pca3rd_chronological_memories;
 
-
-
-        struct State{
-            int occupatoin;
-            Eigen::Vector3f vector;
+        struct Status{
+            int occupation;
+            float dynamic_probability;
+            CloudINormalPtr pcl_pc;
+            Eigen::Vector3f 3rd_main_component;
         };
 
+        std::vector<std::vector<std::vector<Status> > > voxel_grid;
 };
 
 #endif// __DYNAMIC_VOXEL_FILTER_H
