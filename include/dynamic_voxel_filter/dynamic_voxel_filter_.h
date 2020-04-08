@@ -38,19 +38,18 @@
 
 #define MEMORY_SIZE 5
 
-
 typedef pcl::PointXYZI PointI;
 typedef pcl::PointCloud<PointI> CloudI;
 typedef pcl::PointCloud<PointI>::Ptr CloudIPtr;
-
-typedef pcl::PointXYZINormal PointINormal;
-typedef pcl::PointCloud<PointINormal> CloudINormal;
-typedef pcl::PointCloud<PointINormal>::Ptr CloudINormalPtr;
 
 typedef pcl::PointXYZINormal PointIVoxel;
 typedef pcl::PointCloud<PointIVoxel> CloudIVoxel;
 typedef pcl::PointCloud<PointIVoxel>::Ptr CloudIVoxelPtr; // I:Time, Normal:voxel position
 
+struct State{
+	int occupatoin;
+	Eigen::Vector3f vector;
+};
 //typedef boost::multi_array<Eigen::Vector3f, 3> MultiArrayEVec3f;
 typedef boost::multi_array<State, 3> MultiArrayEVec3f;
 MultiArrayEVec3f pca3rd_voxel(boost::extents[VOXEL_NUM_X][VOXEL_NUM_Y][VOXEL_NUM_Z]);
@@ -61,7 +60,7 @@ class DynamicVoxelFilter
 	public:
 		DynamicVoxelFilter(void);
 
-		CloudINormal pc_callback(const sensor_msgs::PointCloud2ConstPtr&);
+		void pc_callback(const sensor_msgs::PointCloud2ConstPtr&);
 		void odom_callback(const nav_msgs::OdometryConstPtr&);
 		void execution(void);
 		Eigen::Matrix3f eigen_estimation(CloudIVoxelPtr);
@@ -96,6 +95,7 @@ class DynamicVoxelFilter
 		tf::StampedTransform transform;
 
 		// PointCloud
+		CloudIPtr input_intensity_pc_ {new CloudI};
 		CloudIVoxelPtr intensity_normal_pc_ {new CloudIVoxel};
 		CloudIVoxelPtr transformed_intensity_normal_pc_ {new CloudIVoxel};
 		CloudIVoxelPtr addressed_pc_ {new CloudIVoxel};
@@ -106,14 +106,6 @@ class DynamicVoxelFilter
 
 		// Memory
 		std::vector<MultiArrayEVec3f> pca3rd_chronological_memories;
-
-
-
-        struct State{
-            int occupatoin;
-            Eigen::Vector3f vector;
-        };
-
 };
 
 #endif// __DYNAMIC_VOXEL_FILTER_H

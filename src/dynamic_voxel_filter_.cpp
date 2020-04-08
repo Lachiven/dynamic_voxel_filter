@@ -60,8 +60,6 @@ void DynamicVoxelFilter::execution(void)
 
 void DynamicVoxelFilter::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg)
 {
-    
-    CloudIPtr input_intensity_pc_ {new CloudI};
 	pcl::fromROSMsg(*msg, *input_intensity_pc_);
 	pcl::copyPointCloud(*input_intensity_pc_, *intensity_normal_pc_);
 	pc_callback_flag = true;
