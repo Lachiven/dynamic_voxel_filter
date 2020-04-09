@@ -43,8 +43,9 @@ void DynamicVoxelFilter::execution(void)
 
 			pcl_ros::transformPointCloud("/odom", imput_pc, odom_transformed_pc, listener);
 			pcl::fromROSMsg(transformed_pc, *pcl_odom_transformed_pc);
-			
-			pc_addressing(pcl_transformed_pc);
+			to_voxel_tf();
+
+			pc_addressing(pcl_odom_voxel_transformed_pc);
             eigen_estimation();
 			input_pca3rd2voxel();	
 			chronological_pca3rd_variance_calculation();
@@ -66,15 +67,23 @@ void DynamicVoxelFilter::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg
 }
 
 
-CloudINormalPtr DynamicVoxelFilter::to_voxel_tf()
+CloudINormalPtr DynamicVoxelFilter::to_voxel_tf(CloudINormalPtr pcl_odom_pc)
 {
-
+    for(auto& pt : pcl_odom_pc->points){
+        pc.x += 0.5 * MAX_RANGE_X;
+        pc.y += 0.5 * MAX_RANGE_Y;
+        // z is needless to transform
+    }
 }
 
 
-CloudINormalPtr DynamicVoxelFilter::to_voxel_tf()
+CloudINormalPtr DynamicVoxelFilter::from_voxel_tf(CloudINormalPtr pcl_odom_voxel_pc)
 {
-
+    for(auto& pt : pcl_odom_voxel_pc->points){
+        pc.x -= 0.5 * MAX_RANGE_X;
+        pc.y -= 0.5 * MAX_RANGE_Y;
+        // z is needless to transform
+    }
 }
 
 
