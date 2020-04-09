@@ -47,8 +47,8 @@ void DynamicVoxelFilter::execution(void)
 
 			pc_addressing(pcl_odom_voxel_transformed_pc);
             eigen_estimation();
-			input_pca3rd2voxel();	
-			chronological_pca3rd_variance_calculation();
+			3rd_main_component_estimation();	
+			chronological_variance_calculation();
 
 
 			first_flag = true;
@@ -163,7 +163,7 @@ Eigen::Matrix3f DynamicVoxelFilter::eigen_estimation(CloudINormalPtr pcl_voxel_p
 }
 
 
-void DynamicVoxelFilter::chronological_pca3rd_variance_calculation(void)
+void DynamicVoxelFilter::chronological_variance_calculation(void)
 {
 	pca3rd_chronological_memories.push_back(pca3rd_voxel);
 	if(pca3rd_chronological_memories.size() > MEMORY_SIZE){
