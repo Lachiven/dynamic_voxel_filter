@@ -16,7 +16,20 @@ DynamicVoxelFilter::DynamicVoxelFilter(void)
 	ros::NodeHandle n;
 	ros::NodeHandle nh("~");
 
-	pc_subscriber = n.subscribe("/velodyne_points", 10, &DynamicVoxelFilter::pc_callback, this);
+    nh.param("Hz", Hz, 100);
+    nh.param("MAX_LENGTH", MAX_LENGTH, 50); // ->X
+    nh.param("MAX_WIDTH", MAX_WIDTH, 50); // ->Y
+    nh.param("MAX_HEIGHT", MAX_HEIGHT, 2); // ->Z
+    nh.param("VOXEL_NUM_X", VOXEL_NUM_X, 500);
+    nh.param("VOXEL_NUM_Y", VOXEL_NUM_Y, 500);
+    nh.param("VOXEL_NUM_Z", VOXEL_NUM_X, 20);
+    // nh.param("", , );
+
+    voxel_size_x = MAX_LENGTH / VOXEL_NUM_X;
+    voxel_size_y = MAX_WIDTH / VOXEL_NUM_Y;
+    voxel_size_z = MAX_HEIGHT / VOXEL_NUM_Z;
+
+    pc_subscriber = n.subscribe("/velodyne_points", 10, &DynamicVoxelFilter::pc_callback, this);
     odom_subscriber = n.subscribe("/odom", 10, &DynamicVoxelFilter::odom_callback, this);
 	
 	dynamic_pc_publisher = n.advertise<sensor_msgs::PointCloud2>("/dynamic_pc", 10);
@@ -64,6 +77,12 @@ void DynamicVoxelFilter::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg
 {
 	imput_pc = *msg;
     pc_callback_flag = true;
+}
+
+
+void DynamicVoxelFilter::initialization(void)
+{
+    
 }
 
 

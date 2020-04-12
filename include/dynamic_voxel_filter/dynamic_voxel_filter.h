@@ -28,17 +28,6 @@
 #include <boost/multi_array.hpp>
 
 
-#define MAX_RANGE_X 100
-#define MAX_RANGE_Y 100
-#define MAX_RANGE_Z 10
-
-#define VOXEL_NUM_X 500
-#define VOXEL_NUM_Y 500
-#define VOXEL_NUM_Z 50
-
-#define MEMORY_SIZE 5
-
-
 typedef pcl::PointXYZI PointI;
 typedef pcl::PointCloud<PointI> CloudI;
 typedef pcl::PointCloud<PointI>::Ptr CloudIPtr;
@@ -46,10 +35,6 @@ typedef pcl::PointCloud<PointI>::Ptr CloudIPtr;
 typedef pcl::PointXYZINormal PointINormal;
 typedef pcl::PointCloud<PointINormal> CloudINormal;
 typedef pcl::PointCloud<PointINormal>::Ptr CloudINormalPtr;
-
-typedef pcl::PointXYZINormal PointIVoxel;
-typedef pcl::PointCloud<PointIVoxel> CloudIVoxel;
-typedef pcl::PointCloud<PointIVoxel>::Ptr CloudIVoxelPtr; // I:Time, Normal:voxel position
 
 //typedef boost::multi_array<Eigen::Vector3f, 3> MultiArrayEVec3f;
 typedef boost::multi_array<State, 3> MultiArrayEVec3f;
@@ -67,7 +52,7 @@ class DynamicVoxelFilter
 		Eigen::Matrix3f eigen_estimation(CloudIVoxelPtr);
 		CloudIVoxelPtr pc_addressing(CloudIVoxelPtr);
 		void input_pt2voxel(CloudIVoxelPtr);
-		void input_pca3rd2voxel(void);
+		void 3rd_main_component_estimation(void);
 		void chronological_pca3rd_variance_calculation(void);
 	
 	private:
@@ -78,11 +63,10 @@ class DynamicVoxelFilter
 
 		const static int X = 0, Y = 1, Z = 2;
 		const static int Occupied = 1, Unoccupied = 0, Unknown = -1;
-		const float Hz = 100.0;
-		const float voxel_size_x = MAX_RANGE_X / VOXEL_NUM_X,
-					voxel_size_y = MAX_RANGE_Y / VOXEL_NUM_Y,
-					voxel_size_z = MAX_RANGE_Z / VOXEL_NUM_Z;
 
+		float Hz;
+        float voxel_size_x, voxel_size_y, voxel_size_z;
+    
 		ros::Subscriber pc_subscriber;
 		ros::Subscriber odom_subscriber;
 		ros::Publisher dynamic_pc_publisher;
