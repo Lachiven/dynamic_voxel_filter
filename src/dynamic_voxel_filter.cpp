@@ -30,7 +30,7 @@ DynamicVoxelFilter::DynamicVoxelFilter(void)
     voxel_size_z = MAX_HEIGHT / VOXEL_NUM_Z;
 
     pc_subscriber = n.subscribe("/velodyne_points", 10, &DynamicVoxelFilter::pc_callback, this);
-    odom_subscriber = n.subscribe("/odom", 10, &DynamicVoxelFilter::odom_callback, this);
+    // odom_subscriber = n.subscribe("/odom", 10, &DynamicVoxelFilter::odom_callback, this);
 	
 	dynamic_pc_publisher = n.advertise<sensor_msgs::PointCloud2>("/dynamic_pc", 10);
 	static_pc_publisher = n.advertise<sensor_msgs::PointCloud2>("/static_pc", 10);
@@ -70,8 +70,6 @@ void DynamicVoxelFilter::execution(void)
 			pcl_ros::transformPointCloud("/velodyne", pcl_dynamic_odom_pc, pcl_dynamic_sensor_transformed_pc, listener);
 			pcl::toROSMsg(*pcl_dynamic_sensor_transformed_pc, dynamic_pc);
 
-			first_flag = true;
-			pc_callback_flag = false;
 		}
 		r.sleep();
 		ros::spinOnce();
@@ -111,6 +109,8 @@ void DynamicVoxelFilter::formatting(void)
 
 void DynamicVoxelFilter::initialization(void)
 {
+    tf_listen_flag = false;
+    pc_callback_flag = false;
     voxel_grid.clear();
     // voxel_id_list.clear();
 }
