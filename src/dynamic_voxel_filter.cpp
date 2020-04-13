@@ -39,8 +39,12 @@ DynamicVoxelFilter::DynamicVoxelFilter(void)
 
 void DynamicVoxelFilter::execution(void)
 {
+    formatting();
+
 	ros::Rate r(Hz);
 	while(ros::ok()){
+        initialization();
+
 		try{
        		listener.lookupTransform("/odom","/velodyne", ros::Time(0), transform);
 			tf_listen_flag = true;
@@ -82,7 +86,7 @@ void DynamicVoxelFilter::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg
 }
 
 
-void DynamicVoxelFilter::initialization(void)
+void DynamicVoxelFilter::formatting(void)
 {
     std::vector<Status> grid_1d;
     std::vector<std::vector<Status> > grid_2d;
@@ -101,18 +105,23 @@ void DynamicVoxelFilter::initialization(void)
     }
     for(int iz = 0; iz < VOXEL_NUM_Z; iz++){
         voxel_grid.push_back(grid_2d);
-    }
+    }   
+}
 
-    
+
+void DynamicVoxelFilter::initialization(void)
+{
+    voxel_grid.clear();
+    // voxel_id_list.clear();
 }
 
 
 CloudINormalPtr DynamicVoxelFilter::to_voxel_tf(CloudINormalPtr pcl_odom_pc)
 {
     for(auto& pt : pcl_odom_pc->points){
-        pc.x += 0.5 * MAX_RANGE_X;
-        pc.y += 0.5 * MAX_RANGE_Y;
-        // z is needless to transform
+        pt.x += 0.5 * MAX_RANGE_X;
+        pt.y += 0.5 * MAX_RANGE_Y;
+        // pt.z is needless to transform
     }
 }
 
@@ -120,8 +129,8 @@ CloudINormalPtr DynamicVoxelFilter::to_voxel_tf(CloudINormalPtr pcl_odom_pc)
 CloudINormalPtr DynamicVoxelFilter::from_voxel_tf(CloudINormalPtr pcl_odom_voxel_pc)
 {
     for(auto& pt : pcl_odom_voxel_pc->points){
-        pc.x -= 0.5 * MAX_RANGE_X;
-        pc.y -= 0.5 * MAX_RANGE_Y;
+        pt.x -= 0.5 * MAX_RANGE_X;
+        pt.y -= 0.5 * MAX_RANGE_Y;
         // z is needless to transform
     }
 }
@@ -129,41 +138,37 @@ CloudINormalPtr DynamicVoxelFilter::from_voxel_tf(CloudINormalPtr pcl_odom_voxel
 
 void DynamicVoxelFilter::pc_addressing(CloudINormalPtr pcl_voxel_pc)
 {
-	for(auto& pt : pcl_voxel_pc->points){
-		bool address_flag = false;
-		
-        for(int ix = 0; xv < VOXEL_NUM_X; xv++){
-            if(pt.x > MAX_RANGE_X) break;
+    Eigen::Vector3d voxel_id;
 
-			for(int iy = 0; yv < VOXEL_NUM_Y; yv++){
-                if(pt.y > MAX_RANGE_Y) break;
+    CloudINormalPtr pcl_tmp_pt {new CloudINormal};
+    pcl_tmp_pt->points.resize(1);
+    
+    for(auto& pt : pcl_voxel_pc->points){
+        // voxel_id.x() = (int)(pt.x/voxel_size_x);
+        // voxel_id.y() = (int)(pt.y/voxel_size_y);
+        // voxel_id.z() = (int)(pt.z/voxel_size_z);
+        // voxel_id_list.push_back(voxel_id);
+        ix = (int)(pt.x/voxel_size_x);
+        iy = (int)(pt.y/voxel_size_y);
+        iz = (int)(pt.z/voxel_size_z);
 
-				for(int iz = 0; zv < VOXEL_NUM_Z; zv++){
-                    if(pt.z > MAX_RANGE_Z) break;
-					
-                    CloudINormalPtr pcl_tmp_pt {new CloudINormal};
-					pcl_tmp_pt->points.resize(1);
-					if(ix == (int)pt.x && iy == (int)pt.y && iz == pt.z){
-						pcl_tmp_pt->points[0].x = pt.x;
-						pcl_tmp_pt->points[0].y = pt.y;
-						pcl_tmp_pt->points[0].z = pt.z;
-						pcl_tmp_pt->points[0].intensity = pt.intensity;
-						pcl_tmp_pt->points[0].normal_x = pt.normal_x;
-						pcl_tmp_pt->points[0].normal_y = pt.normal_y;
-						pcl_tmp_pt->points[0].normal_z = pt.normal_z;
-                        *voxel_grid[ix][iy][iz].pcl_pc += *pcl_tmp_pt;
-					    voxel_grid[ix][iy][iz].occupation = Occupied;
-						address_flag = true;
-					}
-					
-                    if(address_flag) break;
-				}
-				if(address_flag) break;
-			}
-			if(address_flag) break;
-		}
+        pcl_tmp_pt->points[0].x = pt.x;
+        pcl_tmp_pt->points[0].y = pt.y;
+        pcl_tmp_pt->points[0].z = pt.z;
+        pcl_tmp_pt->points[0].intensity = pt.intensity;
+        pcl_tmp_pt->points[0].normal_x = pt.normal_x;
+        pcl_tmp_pt->points[0].normal_y = pt.normal_y;
+        pcl_tmp_pt->points[0].normal_z = pt.normal_z;
 
-	}
+        // if(voxel_id.x() < VOXEL_NUM_X && voxel_id.y() < VOXEL_NUM_Y && voxel_id.z() VOXEL_NUM_Z){
+        if(ix < VOXEL_NUM_X && iy < VOXEL_NUM_Y && iz < VOXEL_NUM_Z){
+            //*voxel_grid[voxel_id.x()][voxel_id.y()][voxel_id.z()].pcl_pc += *pcl_tmp_pt;
+            *voxel_grid[ix][iy][iz].pcl_pc += *pcl_tmp_pt;
+
+            //voxel_grid[voxel_id.x()][voxel_id.y()][voxel_id.z()].occupation = Occupied;
+            voxel_grid[ix][iy][iz].occupation = Occupied;
+        }
+    }
 }
 
 

@@ -41,18 +41,19 @@ class DynamicVoxelFilter
 	public:
 		DynamicVoxelFilter(void);
 
-		CloudINormal pc_callback(const sensor_msgs::PointCloud2ConstPtr&);
-		void odom_callback(const nav_msgs::OdometryConstPtr&);
 		void execution(void);
-		Eigen::Matrix3f eigen_estimation(CloudIVoxelPtr);
-		CloudINormalPtr pc_addressing(CloudIVoxelPtr);
-		void input_pt2voxel(CloudIVoxelPtr);
+		CloudINormal pc_callback(const sensor_msgs::PointCloud2ConstPtr&);
+        void formatting(void);
+        void initialization(void);
+        CloudINormalPtr to_voxel_tf(CloudINormalPtr)
+        CloudINormalPtr from_voxel_tf(CloudINormalPtr)
+		void pc_addressing(CloudINormalPtr);
 		void 3rd_main_component_estimation(void);
+		Eigen::Matrix3f eigen_estimation(CloudINormalPtr);
 		void chronological_pca3rd_variance_calculation(void);
 	
 	private:
 		bool pc_callback_flag = false;
-		bool odom_callback_flag = false;
 		bool tf_listen_flag = false;
 		bool first_flag = false;
 
@@ -90,12 +91,14 @@ class DynamicVoxelFilter
         };
 
         std::vector<std::vector<std::vector<Status> > > voxel_grid;
+        
+        std::vector<Eigen::Vector3d> voxel_id_list;
 
         /*
         struct RayCast{
             float pitch;
             float yaw;
-            std::vector<Eigen::Vector3d> voxel_id;
+            std::vector<Eigen::Vector3d> voxel_index;
         };
         
         std::vector<RayList> pre_cast_list;
