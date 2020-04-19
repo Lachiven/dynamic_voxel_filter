@@ -63,7 +63,6 @@ void DynamicVoxelFilter::execution(void)
 			to_voxel_tf();
 
 			pc_addressing(pcl_odom_voxel_transformed_pc);
-            eigen_estimation();
 			3rd_main_component_estimation();	
 			chronological_variance_calculation();
 
@@ -90,10 +89,18 @@ void DynamicVoxelFilter::formatting(void)
     std::vector<std::vector<Status> > grid_2d;
 
     Status initial_status;
+    initial_status.pcl_pc->points.resize(0);
+    initial_status.step = 0;
     initial_status.occupation = Unknown;
     initial_status.dynamic_probability = 0.0;
-    initial_status.pcl_pc->points.resize(0);
-    initia_status.3rd_main_component = zero_vector;
+    initial_status.pre_3rd_main_component = zero_vector;
+    initial_status.new_3rd_main_component = zero_vector;
+    initial_status.pre_3mc_mean = zero_vector;
+    initial_status.new_3mc_mean = zero_vector;
+    initial_status.pre_3mc_var = zero_vector;
+    initial_status.new_3mc_var = zero_vector;
+    initial_status.pre_3mc_cov = zero_vector;
+    initial_status.new_3mc_cov = zero_vector;
 
     for(int ix = 0; ix < VOXEL_NUM_X; ix++){
         grid_1d.push_back(initial_status);
@@ -111,8 +118,8 @@ void DynamicVoxelFilter::initialization(void)
 {
     tf_listen_flag = false;
     pc_callback_flag = false;
-    voxel_grid.clear();
-    // voxel_id_list.clear();
+    voxel_grid.pcl_pc.clear();
+    voxel_id_list.clear();
 }
 
 
@@ -144,13 +151,10 @@ void DynamicVoxelFilter::pc_addressing(CloudINormalPtr pcl_voxel_pc)
     pcl_tmp_pt->points.resize(1);
     
     for(auto& pt : pcl_voxel_pc->points){
-        // voxel_id.x() = (int)(pt.x/voxel_size_x);
-        // voxel_id.y() = (int)(pt.y/voxel_size_y);
-        // voxel_id.z() = (int)(pt.z/voxel_size_z);
-        // voxel_id_list.push_back(voxel_id);
-        ix = (int)(pt.x/voxel_size_x);
-        iy = (int)(pt.y/voxel_size_y);
-        iz = (int)(pt.z/voxel_size_z);
+        voxel_id.x() = (int)(pt.x / voxel_size_x);
+        voxel_id.y() = (int)(pt.y / voxel_size_y);
+        voxel_id.z() = (int)(pt.z / voxel_size_z);
+        voxel_id_list.push_back(voxel_id);
 
         pcl_tmp_pt->points[0].x = pt.x;
         pcl_tmp_pt->points[0].y = pt.y;
@@ -160,13 +164,9 @@ void DynamicVoxelFilter::pc_addressing(CloudINormalPtr pcl_voxel_pc)
         pcl_tmp_pt->points[0].normal_y = pt.normal_y;
         pcl_tmp_pt->points[0].normal_z = pt.normal_z;
 
-        // if(voxel_id.x() < VOXEL_NUM_X && voxel_id.y() < VOXEL_NUM_Y && voxel_id.z() VOXEL_NUM_Z){
-        if(ix < VOXEL_NUM_X && iy < VOXEL_NUM_Y && iz < VOXEL_NUM_Z){
-            //*voxel_grid[voxel_id.x()][voxel_id.y()][voxel_id.z()].pcl_pc += *pcl_tmp_pt;
-            *voxel_grid[ix][iy][iz].pcl_pc += *pcl_tmp_pt;
-
-            //voxel_grid[voxel_id.x()][voxel_id.y()][voxel_id.z()].occupation = Occupied;
-            voxel_grid[ix][iy][iz].occupation = Occupied;
+        if(voxel_id.x() < VOXEL_NUM_X && voxel_id.y() < VOXEL_NUM_Y && voxel_id.z() VOXEL_NUM_Z){
+            *voxel_grid[voxel_id.x()][voxel_id.y()][voxel_id.z()].pcl_pc += *pcl_tmp_pt;
+            voxel_grid[voxel_id.x()][voxel_id.y()][voxel_id.z()].occupation = Occupied;
         }
     }
 }
@@ -179,10 +179,9 @@ void DynamicVoxelFilter::3rd_main_component_estimation(void)
 			for(int iz = 0; zv < VOXEL_NUM_Z; iz++){
 				if((voxel_grid[ix][iy][iz])->points.size() >= 3){
 					Eigen::Matrix3f pca_vectors = eigen_estimation(voxel_grid[ix][iy][iz].pcl_pc);
-					voxel_grid[ix][iy][iz].3rd_main_component = pca_vectors.block(0, 2, 3, 1);
-				}else{
-					voxel_grid[ix][iy][iz].3rd_main_component = zero_vector;
-				}
+					voxel_grid[ix][iy][iz].new_3rd_main_component = pca_vectors.block(0, 2, 3, 1);
+				    voxel_grid[ix][iy][iz].n += 1;
+                }
 			}
 		}
 	}
@@ -209,17 +208,39 @@ Eigen::Matrix3f DynamicVoxelFilter::eigen_estimation(CloudINormalPtr pcl_voxel_p
 }
 
 
-void DynamicVoxelFilter::chronological_variance_calculation(void)
+float DynamicVoxelFilter::chronological_variance_calculation(void)
 {
-	pca3rd_chronological_memories.push_back(pca3rd_voxel);
-	if(pca3rd_chronological_memories.size() > MEMORY_SIZE){
-		pca3rd_chronological_memories.erase(pca3rd_chronological_memories.begin());
-	}
-	
+    for(auto& id : voxel_id_list){
+        if(voxel_grid[id.x()][id.y()][id.z()].n == 1){
+            voxel_grid[id.x()][id.y()][id.z()].pre_3mc_mean = voxel_grid[id.x()][id.y()][id.z()].new_3rd_main_component;
+            voxel_grid[id.x()][id.y()][id.z()].pre_3rd_main_component = voxel_grid[id.x()][id.y()][id.z()].new_3rd_main_component;
+        }else if(voxel_grid[id.x()][id.y()][id.z()].n > 1){
+            Eigen::Vector3f new_3mc = voxel_grid[id.x()][id.y()][id.z()].new_3rd_main_component;
+            
+            int n = voxel_grid[id.x()][id.y()][id.z()].step;
+            Eigen::Vector3f pre_3mc_mean_ = voxel_grid[id.x()][id.y()][id.z()].pre_3mc_mean;
+            Eigen::Vector3f new_3mc_mean_ = ((n-1)*pre_3mc_mean_ + new_3mc) / n;
+            voxel_grid[id.x()][id.y()][id.z()].new_3mc_mean = new_3mc_mean_;
+            
+            Eigen::Vector3f new_3mc_sqr = hadamard_product(new_3mc);
+            Eigen::Vector3f pre_3mc_mean_sqr = hadamard_product(pre_3mc_mean_);
+            Eigen::Vector3f new_3mc_mean_sqr = hadamard_product(new_3mc_mean_);
+            Eigen::Vector3f pre_3mc_var_ = voxel_grid[id.x()][id.y()][id.z()].pre_3mc_var;
+            Eigen::Vector3f pre_3mc_var_sqr = hadamard_product(pre_3mc_var);
+            voxel_grid[id.x()][id.y()][id.z()].new_3mc_var = ((n-1)*(pre_3mc_var_sqr + pre_3mc_mean_sqr) + new_3mc_sqr)/n - new_3mc_mean_sqr;
+
+
+        }
+    }
 }
 
 
-
+Eigen::Vector3f DynamicVoxelFilter::hadamard_product(Eigen::Vector3f in){
+    Eigen::Vector3f output_vector;
+    output_vector << in.x()*in.x(), in.y()*in.y(), in.z()*in.z();
+    
+    return output_vector;
+}
 
 
 

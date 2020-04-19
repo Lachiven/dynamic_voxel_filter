@@ -50,7 +50,7 @@ class DynamicVoxelFilter
 		void pc_addressing(CloudINormalPtr);
 		void 3rd_main_component_estimation(void);
 		Eigen::Matrix3f eigen_estimation(CloudINormalPtr);
-		void chronological_pca3rd_variance_calculation(void);
+		float chronological_variance_calculation(void);
 	
 	private:
 		bool pc_callback_flag = false;
@@ -84,10 +84,18 @@ class DynamicVoxelFilter
 		//std::vector<MultiArrayEVec3f> pca3rd_chronological_memories;
 
         struct Status{
+            CloudINormalPtr pcl_pc;
+            int step;
             float occupation;
             float dynamic_probability;
-            CloudINormalPtr pcl_pc;
-            Eigen::Vector3f 3rd_main_component;
+            Eigen::Vector3f pre_3rd_main_component;
+            Eigen::Vector3f new_3rd_main_component;
+            Eigen::Vector3f pre_3mc_mean; // x, y, z
+            Eigen::Vector3f new_3mc_mean; // x, y, z
+            Eigen::Vector3f pre 3mc_var; // x, y, z
+            Eigen::Vector3f new_3mc_var; // x, y, z
+            Eigen::Vector3f pre_3mc_cov; // xy, yz, zx
+            Eigen::Vector3f new_3mc_cov; // xy, yz, zx
         };
 
         std::vector<std::vector<std::vector<Status> > > voxel_grid;
