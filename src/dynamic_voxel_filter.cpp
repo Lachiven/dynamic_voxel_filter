@@ -13,6 +13,9 @@ int main(int argc, char** argv)
 
 DynamicVoxelFilter::DynamicVoxelFilter(void)
 {
+    ros::NodeHandle n;
+    ros::NodeHandle nh("~");
+
     nh.param("Hz", Hz, 100.0);
     nh.param("MAX_LENGTH", MAX_LENGTH, 50.0); // ->X
     nh.param("MAX_WIDTH", MAX_WIDTH, 50.0); // ->Y
