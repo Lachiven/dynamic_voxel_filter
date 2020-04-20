@@ -39,7 +39,7 @@ typedef pcl::PointCloud<PointINormal>::Ptr CloudINormalPtr;
 class DynamicVoxelFilter
 {
 	public:
-		DynamicVoxelFilter(void);
+		DynamicVoxelFilter(void) : ros::NodeHandle nh("~") {};
 
 		void execution(void);
 		CloudINormal pc_callback(const sensor_msgs::PointCloud2ConstPtr&);
@@ -52,7 +52,6 @@ class DynamicVoxelFilter
 		Eigen::Matrix3f eigen_estimation(CloudINormalPtr);
 		void chronological_variance_calculation(void);
 	
-        ros::NodeHandle n;
         ros::NodeHandle nh("~");
 
 	private:
@@ -70,8 +69,8 @@ class DynamicVoxelFilter
         // float RAY_NUM_PITCH, RAY_NUM_YAW;
         // float RAY_FOV_PITCH, RAY_FOV_YAW;
         // float ray_angle_pitch, ray_angle_yaw;
-
         
+        ros::NodeHandle n;
 		ros::Subscriber pc_subscriber;
 		ros::Subscriber odom_subscriber;
 		ros::Publisher dynamic_pc_publisher;
