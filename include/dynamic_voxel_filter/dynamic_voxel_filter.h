@@ -48,7 +48,7 @@ class DynamicVoxelFilter
         CloudINormalPtr to_voxel_tf(CloudINormalPtr);
         CloudINormalPtr from_voxel_tf(CloudINormalPtr);
 		void pc_addressing(CloudINormalPtr);
-		void 3rd_main_component_estimation(void);
+		void third_main_component_estimation(void);
 		Eigen::Matrix3f eigen_estimation(CloudINormalPtr);
 		void chronological_variance_calculation(void);
 	

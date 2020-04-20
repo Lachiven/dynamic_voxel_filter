@@ -63,7 +63,7 @@ void DynamicVoxelFilter::execution(void)
 			to_voxel_tf();
 
 			pc_addressing(pcl_odom_voxel_transformed_pc);
-			3rd_main_component_estimation();	
+			third_main_component_estimation();	
 			chronological_variance_calculation();
 
 			pcl_ros::transformPointCloud("/velodyne", pcl_dynamic_odom_pc, pcl_dynamic_sensor_transformed_pc, listener);
@@ -170,7 +170,7 @@ void DynamicVoxelFilter::pc_addressing(CloudINormalPtr pcl_voxel_pc)
 }
 
 
-void DynamicVoxelFilter::3rd_main_component_estimation(void)
+void DynamicVoxelFilter::third_main_component_estimation(void)
 {
 	for(int ix = 0; ix < VOXEL_NUM_X; ix++){
 		for(int iy = 0; yv < VOXEL_NUM_Y; iy++){
