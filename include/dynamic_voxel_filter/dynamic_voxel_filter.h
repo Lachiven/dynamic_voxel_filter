@@ -69,7 +69,8 @@ class DynamicVoxelFilter
         // float ray_angle_pitch, ray_angle_yaw;
 
         
-
+        ros::NodeHandle n;
+        ros::NodeHandle nh("~");
 		ros::Subscriber pc_subscriber;
 		ros::Subscriber odom_subscriber;
 		ros::Publisher dynamic_pc_publisher;
