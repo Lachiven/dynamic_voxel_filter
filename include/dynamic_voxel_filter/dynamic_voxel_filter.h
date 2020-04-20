@@ -42,7 +42,7 @@ class DynamicVoxelFilter
 		DynamicVoxelFilter(void);
 
 		void execution(void);
-		CloudINormal pc_callback(const sensor_msgs::PointCloud2ConstPtr&);
+		void pc_callback(const sensor_msgs::PointCloud2ConstPtr&);
         void formatting(void);
         void initialization(void);
         CloudINormalPtr to_voxel_tf(CloudINormalPtr);
