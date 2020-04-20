@@ -60,14 +60,14 @@ void DynamicVoxelFilter::execution(void)
             CloudINormalPtr pcl_dynamic_odom_pc {new CloudINormal};
             CloudINormalPtr pcl_dynamic_sensor_transformed_pc {new CloudINormal};
 
-			pcl_ros::transformPointCloud("/odom", pcl_input_pc, pcl_odom_transformed_pc, listener);
+			pcl_ros::transformPointCloud("/odom", *pcl_input_pc, *pcl_odom_transformed_pc, listener);
 			pcl_odom_voxel_transformed_pc = to_voxel_tf(pcl_odom_transformed_pc);
 
 			pc_addressing(pcl_odom_voxel_transformed_pc);
 			third_main_component_estimation();	
 			chronological_variance_calculation();
 
-			pcl_ros::transformPointCloud("/velodyne", pcl_dynamic_odom_pc, pcl_dynamic_sensor_transformed_pc, listener);
+			pcl_ros::transformPointCloud("/velodyne", *pcl_dynamic_odom_pc, *pcl_dynamic_sensor_transformed_pc, listener);
 			pcl::toROSMsg(*pcl_dynamic_sensor_transformed_pc, dynamic_pc);
 		}
 		r.sleep();
