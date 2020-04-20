@@ -27,11 +27,11 @@ DynamicVoxelFilter::DynamicVoxelFilter(void)
     voxel_size_y = (float)(MAX_WIDTH / VOXEL_NUM_Y);
     voxel_size_z = (float)(MAX_HEIGHT / VOXEL_NUM_Z);
 
-    pc_subscriber = n.subscribe("/velodyne_points", 10, &DynamicVoxelFilter::pc_callback, this);
+    pc_subscriber = nh.subscribe("/velodyne_points", 10, &DynamicVoxelFilter::pc_callback, this);
     // odom_subscriber = n.subscribe("/odom", 10, &DynamicVoxelFilter::odom_callback, this);
 	
-	dynamic_pc_publisher = n.advertise<sensor_msgs::PointCloud2>("/dynamic_pc", 10);
-	static_pc_publisher = n.advertise<sensor_msgs::PointCloud2>("/static_pc", 10);
+	dynamic_pc_publisher = nh.advertise<sensor_msgs::PointCloud2>("/dynamic_pc", 10);
+	static_pc_publisher = nh.advertise<sensor_msgs::PointCloud2>("/static_pc", 10);
 }
 
 
