@@ -25,9 +25,9 @@ DynamicVoxelFilter::DynamicVoxelFilter(void)
     nh.param("VOXEL_NUM_Z", VOXEL_NUM_X, 20.0);
     // nh.param("", , );
 
-    voxel_size_x = MAX_LENGTH / VOXEL_NUM_X;
-    voxel_size_y = MAX_WIDTH / VOXEL_NUM_Y;
-    voxel_size_z = MAX_HEIGHT / VOXEL_NUM_Z;
+    voxel_size_x = (float)(MAX_LENGTH / VOXEL_NUM_X);
+    voxel_size_y = (float)(MAX_WIDTH / VOXEL_NUM_Y);
+    voxel_size_z = (float)(MAX_HEIGHT / VOXEL_NUM_Z);
 
     pc_subscriber = n.subscribe("/velodyne_points", 10, &DynamicVoxelFilter::pc_callback, this);
     // odom_subscriber = n.subscribe("/odom", 10, &DynamicVoxelFilter::odom_callback, this);

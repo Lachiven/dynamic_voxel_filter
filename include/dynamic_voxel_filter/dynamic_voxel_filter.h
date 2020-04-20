@@ -60,10 +60,10 @@ class DynamicVoxelFilter
         const static int xy = 0, yz = 1, zx = 2;
 		constexpr static float Occupied = 1.0, Unoccupied = 0.0, Unknown = 0.5;
 
-		float Hz;
-        float MAX_LENGTH, MAX_WIDTH, MAX_HEIGHT;
-        float VOXEL_NUM_X, VOXEL_NUM_Y, VOXEL_NUM_Z;
-        float voxel_size_x, voxel_size_y, voxel_size_z;
+		double Hz;
+        double MAX_LENGTH, MAX_WIDTH, MAX_HEIGHT;
+        double VOXEL_NUM_X, VOXEL_NUM_Y, VOXEL_NUM_Z;
+        double voxel_size_x, voxel_size_y, voxel_size_z;
         // float RAY_NUM_PITCH, RAY_NUM_YAW;
         // float RAY_FOV_PITCH, RAY_FOV_YAW;
         // float ray_angle_pitch, ray_angle_yaw;
