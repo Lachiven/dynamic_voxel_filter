@@ -58,7 +58,7 @@ void DynamicVoxelFilter::execution(void)
 
 			pcl_ros::transformPointCloud("/odom", input_pc, odom_transformed_pc, listener);
 			pcl::fromROSMsg(odom_transformed_pc, *pcl_odom_transformed_pc);
-			to_voxel_tf();
+			to_voxel_tf(pcl_odom_transformed_pc);
 
 			pc_addressing(pcl_odom_voxel_transformed_pc);
 			third_main_component_estimation();	
