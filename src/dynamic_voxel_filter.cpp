@@ -53,24 +53,22 @@ void DynamicVoxelFilter::execution(void)
     	}
 
 		if(pc_callback_flag && tf_listen_flag){
-            sensor_msgs::PointCloud2 odom_transformed_pc;
+            // sensor_msgs::PointCloud2 odom_transformed_pc;
             sensor_msgs::PointCloud2 dynamic_pc;
             CloudINormalPtr pcl_odom_transformed_pc {new CloudINormal};
             CloudINormalPtr pcl_odom_voxel_transformed_pc {new CloudINormal};
             CloudINormalPtr pcl_dynamic_odom_pc {new CloudINormal};
             CloudINormalPtr pcl_dynamic_sensor_transformed_pc {new CloudINormal};
 
-			pcl_ros::transformPointCloud("/odom", input_pc, odom_transformed_pc, listener);
-			pcl::fromROSMsg(odom_transformed_pc, *pcl_odom_transformed_pc);
+			pcl_ros::transformPointCloud("/odom", pcl_input_pc, pcl_odom_transformed_pc, listener);
 			pcl_odom_voxel_transformed_pc = to_voxel_tf(pcl_odom_transformed_pc);
 
 			pc_addressing(pcl_odom_voxel_transformed_pc);
 			third_main_component_estimation();	
 			chronological_variance_calculation();
 
-			pcl::toROSMsg(*pcl_dynamic_sensor_transformed_pc, dynamic_pc);
 			pcl_ros::transformPointCloud("/velodyne", pcl_dynamic_odom_pc, pcl_dynamic_sensor_transformed_pc, listener);
-
+			pcl::toROSMsg(*pcl_dynamic_sensor_transformed_pc, dynamic_pc);
 		}
 		r.sleep();
 		ros::spinOnce();
@@ -81,6 +79,7 @@ void DynamicVoxelFilter::execution(void)
 void DynamicVoxelFilter::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg)
 {
 	input_pc = *msg;
+	pcl::fromROSMsg(input_pc, *pcl_input_pc);
     pc_callback_flag = true;
 }
 
@@ -121,7 +120,7 @@ void DynamicVoxelFilter::initialization(void)
     for(int ix = 0; ix < VOXEL_NUM_X; ix++){
         for(int iy = 0; iy < VOXEL_NUM_Y; iy++){
             for(int iz = 0; iz < VOXEL_NUM_Z; iz++){
-                voxel_grid[ix][iy][iz].pcl_pc.clear();
+                voxel_grid[ix][iy][iz].pcl_pc->points.clear();
             }
         }
     }
