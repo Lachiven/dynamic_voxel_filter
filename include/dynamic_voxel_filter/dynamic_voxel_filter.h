@@ -52,8 +52,6 @@ class DynamicVoxelFilter
 		Eigen::Matrix3f eigen_estimation(CloudINormalPtr);
 		void chronological_variance_calculation(void);
 	
-        ros::NodeHandle nh("~");
-
 	private:
 		bool pc_callback_flag = false;
 		bool tf_listen_flag = false;
