@@ -54,11 +54,15 @@ void DynamicVoxelFilter::execution(void)
 
 		if(pc_callback_flag && tf_listen_flag){
             sensor_msgs::PointCloud2 odom_transformed_pc;
+            sensor_msgs::PointCloud2 dynamic_pc;
             CloudINormalPtr pcl_odom_transformed_pc {new CloudINormal};
+            CloudINormalPtr pcl_odom_voxel_transformed_pc {new CloudINormal};
+            CloudINormalPtr pcl_dynamic_odom_pc {new CloudINormal};
+            CloudINormalPtr pcl_dynamic_sensor_transformed_pc {new CloudINormal};
 
 			pcl_ros::transformPointCloud("/odom", input_pc, odom_transformed_pc, listener);
 			pcl::fromROSMsg(odom_transformed_pc, *pcl_odom_transformed_pc);
-			to_voxel_tf(pcl_odom_transformed_pc);
+			pcl_odom_voxel_transformed_pc = to_voxel_tf(pcl_odom_transformed_pc);
 
 			pc_addressing(pcl_odom_voxel_transformed_pc);
 			third_main_component_estimation();	
@@ -114,7 +118,13 @@ void DynamicVoxelFilter::initialization(void)
 {
     tf_listen_flag = false;
     pc_callback_flag = false;
-    voxel_grid.pcl_pc.clear();
+    for(int ix = 0; ix < VOXEL_NUM_X; ix++){
+        for(int iy = 0; iy < VOXEL_NUM_Y; iy++){
+            for(iz = 0; iz < VOXEL_NUM_Z; iz++){
+                voxel_grid[ix][iy][iz].pcl_pc.clear();
+            }
+        }
+    }
     voxel_id_list.clear();
 }
 
@@ -122,10 +132,12 @@ void DynamicVoxelFilter::initialization(void)
 CloudINormalPtr DynamicVoxelFilter::to_voxel_tf(CloudINormalPtr pcl_odom_pc)
 {
     for(auto& pt : pcl_odom_pc->points){
-        pt.x += 0.5 * MAX_RANGE_X;
-        pt.y += 0.5 * MAX_RANGE_Y;
+        pt.x += 0.5 * MAX_LENGTH;
+        pt.y += 0.5 * MAX_WIDTH;
         // pt.z is needless to transform
     }
+
+    return pcl_odom_pc;
 }
 
 
@@ -136,6 +148,8 @@ CloudINormalPtr DynamicVoxelFilter::from_voxel_tf(CloudINormalPtr pcl_odom_voxel
         pt.y -= 0.5 * MAX_RANGE_Y;
         // z is needless to transform
     }
+
+    return pcl_odom_voxel_pc;
 }
 
 
@@ -171,12 +185,12 @@ void DynamicVoxelFilter::pc_addressing(CloudINormalPtr pcl_voxel_pc)
 void DynamicVoxelFilter::third_main_component_estimation(void)
 {
 	for(int ix = 0; ix < VOXEL_NUM_X; ix++){
-		for(int iy = 0; yv < VOXEL_NUM_Y; iy++){
-			for(int iz = 0; zv < VOXEL_NUM_Z; iz++){
-				if((voxel_grid[ix][iy][iz])->points.size() >= 3){
+		for(int iy = 0; iy < VOXEL_NUM_Y; iy++){
+			for(int iz = 0; iz < VOXEL_NUM_Z; iz++){
+				if(voxel_grid[ix][iy][iz].pcl_pc->points.size() >= 3){
 					Eigen::Matrix3f pca_vectors = eigen_estimation(voxel_grid[ix][iy][iz].pcl_pc);
 					voxel_grid[ix][iy][iz].new_3rd_main_component = pca_vectors.block(0, 2, 3, 1);
-				    voxel_grid[ix][iy][iz].n += 1;
+				    voxel_grid[ix][iy][iz].step += 1;
                 }
 			}
 		}
@@ -207,10 +221,11 @@ Eigen::Matrix3f DynamicVoxelFilter::eigen_estimation(CloudINormalPtr pcl_voxel_p
 void DynamicVoxelFilter::chronological_variance_calculation(void)
 {
     for(auto& id : voxel_id_list){
-        if(voxel_grid[id.x()][id.y()][id.z()].n == 1){
+        if(voxel_grid[id.x()][id.y()][id.z()].step == 1){
             voxel_grid[id.x()][id.y()][id.z()].pre_3mc_mean = voxel_grid[id.x()][id.y()][id.z()].new_3rd_main_component;
             voxel_grid[id.x()][id.y()][id.z()].pre_3rd_main_component = voxel_grid[id.x()][id.y()][id.z()].new_3rd_main_component;
-        }else if(voxel_grid[id.x()][id.y()][id.z()].n > 1){
+        }
+        else if(voxel_grid[id.x()][id.y()][id.z()].step > 1){
             Eigen::Vector3f new_3mc_ = voxel_grid[id.x()][id.y()][id.z()].new_3rd_main_component;
             
             int n = voxel_grid[id.x()][id.y()][id.z()].step;

@@ -51,6 +51,7 @@ class DynamicVoxelFilter
 		void third_main_component_estimation(void);
 		Eigen::Matrix3f eigen_estimation(CloudINormalPtr);
 		void chronological_variance_calculation(void);
+        Eigen::Vector3f hadamard_product(Eigen::Vector3f);
 	
 	private:
 		bool pc_callback_flag = false;
@@ -61,7 +62,7 @@ class DynamicVoxelFilter
 		constexpr static float Occupied = 1.0, Unoccupied = 0.0, Unknown = 0.5;
 
 		double Hz;
-        double MAX_LENGTH, MAX_WIDTH, MAX_HEIGHT;
+        double MAX_LENGTH, MAX_WIDTH, MAX_HEIGHT; // x, y, z;
         double VOXEL_NUM_X, VOXEL_NUM_Y, VOXEL_NUM_Z;
         double voxel_size_x, voxel_size_y, voxel_size_z;
         // float RAY_NUM_PITCH, RAY_NUM_YAW;
@@ -80,7 +81,10 @@ class DynamicVoxelFilter
 		tf::StampedTransform transform;
 
         sensor_msgs::PointCloud2 input_pc;
+        sensor_msgs::PointCloud2 dynamic_pc;
         CloudINormalPtr pcl_input_pc {new CloudINormal};
+        CloudINormalPtr pcl_odom_voxel_transformed_pc {new CloudINormal};
+        CloudINormalPtr pcl_dynamic_sensor_transformed_pc {new CloudINormal};
 
         Eigen::Vector3f zero_vector = Eigen::Vector3f::Zero();
 		Eigen::Vector3f chronological_variance; // storage PCA 3rd vectors
