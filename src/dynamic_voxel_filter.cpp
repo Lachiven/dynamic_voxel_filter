@@ -229,7 +229,12 @@ float DynamicVoxelFilter::chronological_variance_calculation(void)
             Eigen::Vector3f pre_3mc_var_sqr = hadamard_product(pre_3mc_var);
             voxel_grid[id.x()][id.y()][id.z()].new_3mc_var = ((n-1)*(pre_3mc_var_sqr + pre_3mc_mean_sqr) + new_3mc_sqr)/n - new_3mc_mean_sqr;
 
-
+            voxel_grid[id.x()][id.y()][id.z()].new_3mc_cov(xy) = (new_3mc.x() - pre_3mc_mean_.x())*(new_3mc.y() - pre_3mc_mean_.y())*(n-1)/(n*n)
+                                                                 + voxel_grid[id.x()][id.y()][id.z()].pre_3mc_cov(xy)*(n-1)/n;
+            voxel_grid[id.x()][id.y()][id.z()].new_3mc_cov(yz) = (new_3mc.y() - pre_3mc_mean_.y())*(new_3mc.z() - pre_3mc_mean_.z())*(n-1)/(n*n)
+                                                                 + voxel_grid[id.x()][id.y()][id.z()].pre_3mc_cov(yz)*(n-1)/n;
+            voxel_grid[id.x()][id.y()][id.z()].new_3mc_cov(zx) = (new_3mc.z() - pre_3mc_mean_.z())*(new_3mc.x() - pre_3mc_mean_.x())*(n-1)/(n*n)
+                                                                 + voxel_grid[id.x()][id.y()][id.z()].pre_3mc_cov(zx)*(n-1)/n;
         }
     }
 }
