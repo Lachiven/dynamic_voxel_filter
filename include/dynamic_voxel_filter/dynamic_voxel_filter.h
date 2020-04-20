@@ -58,7 +58,7 @@ class DynamicVoxelFilter
 		bool first_flag = false;
 
         const static int xy = 0, yz = 1, zx = 2;
-		const static float Occupied = 1.0, Unoccupied = 0.0, Unknown = 0.5;
+		constexpr static float Occupied = 1.0, Unoccupied = 0.0, Unknown = 0.5;
 
 		float Hz;
         float MAX_LENGTH, MAX_WIDTH, MAX_HEIGHT;
