@@ -27,11 +27,11 @@ DynamicVoxelFilter::DynamicVoxelFilter(void)
     voxel_size_y = (float)(MAX_WIDTH / VOXEL_NUM_Y);
     voxel_size_z = (float)(MAX_HEIGHT / VOXEL_NUM_Z);
 
-    pc_subscriber = nh.subscribe("/velodyne_points", 10, &DynamicVoxelFilter::pc_callback, this);
+    pc_subscriber = n.subscribe("/velodyne_points", 10, &DynamicVoxelFilter::pc_callback, this);
     // odom_subscriber = n.subscribe("/odom", 10, &DynamicVoxelFilter::odom_callback, this);
 	
-	dynamic_pc_publisher = nh.advertise<sensor_msgs::PointCloud2>("/dynamic_pc", 10);
-	static_pc_publisher = nh.advertise<sensor_msgs::PointCloud2>("/static_pc", 10);
+	dynamic_pc_publisher = n.advertise<sensor_msgs::PointCloud2>("/dynamic_pc", 10);
+	static_pc_publisher = n.advertise<sensor_msgs::PointCloud2>("/static_pc", 10);
 }
 
 
@@ -56,7 +56,7 @@ void DynamicVoxelFilter::execution(void)
             sensor_msgs::PointCloud2 odom_transformed_pc;
             CloudINormalPtr pcl_odom_transformed_pc {new CloudINormal};
 
-			pcl_ros::transformPointCloud("/odom", imput_pc, odom_transformed_pc, listener);
+			pcl_ros::transformPointCloud("/odom", input_pc, odom_transformed_pc, listener);
 			pcl::fromROSMsg(odom_transformed_pc, *pcl_odom_transformed_pc);
 			to_voxel_tf();
 
@@ -76,7 +76,7 @@ void DynamicVoxelFilter::execution(void)
 
 void DynamicVoxelFilter::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg)
 {
-	imput_pc = *msg;
+	input_pc = *msg;
     pc_callback_flag = true;
 }
 
