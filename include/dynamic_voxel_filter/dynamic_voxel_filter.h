@@ -68,6 +68,8 @@ class DynamicVoxelFilter
         // float RAY_FOV_PITCH, RAY_FOV_YAW;
         // float ray_angle_pitch, ray_angle_yaw;
 
+        
+
 		ros::Subscriber pc_subscriber;
 		ros::Subscriber odom_subscriber;
 		ros::Publisher dynamic_pc_publisher;

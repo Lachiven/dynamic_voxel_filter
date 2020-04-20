@@ -16,13 +16,13 @@ DynamicVoxelFilter::DynamicVoxelFilter(void)
 	ros::NodeHandle n;
 	ros::NodeHandle nh("~");
 
-    nh.param("Hz", Hz, 100);
-    nh.param("MAX_LENGTH", MAX_LENGTH, 50); // ->X
-    nh.param("MAX_WIDTH", MAX_WIDTH, 50); // ->Y
-    nh.param("MAX_HEIGHT", MAX_HEIGHT, 2); // ->Z
-    nh.param("VOXEL_NUM_X", VOXEL_NUM_X, 500);
-    nh.param("VOXEL_NUM_Y", VOXEL_NUM_Y, 500);
-    nh.param("VOXEL_NUM_Z", VOXEL_NUM_X, 20);
+    nh.param("Hz", Hz, 100.0);
+    nh.param("MAX_LENGTH", MAX_LENGTH, 50.0); // ->X
+    nh.param("MAX_WIDTH", MAX_WIDTH, 50.0); // ->Y
+    nh.param("MAX_HEIGHT", MAX_HEIGHT, 2.0); // ->Z
+    nh.param("VOXEL_NUM_X", VOXEL_NUM_X, 500.0);
+    nh.param("VOXEL_NUM_Y", VOXEL_NUM_Y, 500.0);
+    nh.param("VOXEL_NUM_Z", VOXEL_NUM_X, 20.0);
     // nh.param("", , );
 
     voxel_size_x = MAX_LENGTH / VOXEL_NUM_X;
