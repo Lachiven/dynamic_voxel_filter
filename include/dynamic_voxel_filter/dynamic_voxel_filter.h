@@ -45,8 +45,8 @@ class DynamicVoxelFilter
 		CloudINormal pc_callback(const sensor_msgs::PointCloud2ConstPtr&);
         void formatting(void);
         void initialization(void);
-        CloudINormalPtr to_voxel_tf(CloudINormalPtr)
-        CloudINormalPtr from_voxel_tf(CloudINormalPtr)
+        CloudINormalPtr to_voxel_tf(CloudINormalPtr);
+        CloudINormalPtr from_voxel_tf(CloudINormalPtr);
 		void pc_addressing(CloudINormalPtr);
 		void 3rd_main_component_estimation(void);
 		Eigen::Matrix3f eigen_estimation(CloudINormalPtr);
