@@ -85,7 +85,7 @@ class DynamicVoxelFilter
 		//std::vector<MultiArrayEVec3f> pca3rd_chronological_memories;
 
         struct Status{
-            CloudINormalPtr pcl_pc;
+            CloudINormalPtr pcl_pc {new CloudINormal};
             int step;
             float occupation;
             float chronological_variance;
@@ -93,7 +93,7 @@ class DynamicVoxelFilter
             Eigen::Vector3f pre_3rd_main_component;
             Eigen::Vector3f new_3rd_main_component;
             Eigen::Vector3f pre_3mc_mean; // x, y, z
-            Eigen::Vector3f pre 3mc_var; // x, y, z
+            Eigen::Vector3f pre_3mc_var; // x, y, z
             Eigen::Vector3f pre_3mc_cov; // xy, yz, zx
         };
 
