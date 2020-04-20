@@ -68,8 +68,8 @@ void DynamicVoxelFilter::execution(void)
 			third_main_component_estimation();	
 			chronological_variance_calculation();
 
-			pcl_ros::transformPointCloud("/velodyne", pcl_dynamic_odom_pc, pcl_dynamic_sensor_transformed_pc, listener);
 			pcl::toROSMsg(*pcl_dynamic_sensor_transformed_pc, dynamic_pc);
+			pcl_ros::transformPointCloud("/velodyne", pcl_dynamic_odom_pc, pcl_dynamic_sensor_transformed_pc, listener);
 
 		}
 		r.sleep();
@@ -120,7 +120,7 @@ void DynamicVoxelFilter::initialization(void)
     pc_callback_flag = false;
     for(int ix = 0; ix < VOXEL_NUM_X; ix++){
         for(int iy = 0; iy < VOXEL_NUM_Y; iy++){
-            for(iz = 0; iz < VOXEL_NUM_Z; iz++){
+            for(int iz = 0; iz < VOXEL_NUM_Z; iz++){
                 voxel_grid[ix][iy][iz].pcl_pc.clear();
             }
         }
@@ -144,8 +144,8 @@ CloudINormalPtr DynamicVoxelFilter::to_voxel_tf(CloudINormalPtr pcl_odom_pc)
 CloudINormalPtr DynamicVoxelFilter::from_voxel_tf(CloudINormalPtr pcl_odom_voxel_pc)
 {
     for(auto& pt : pcl_odom_voxel_pc->points){
-        pt.x -= 0.5 * MAX_RANGE_X;
-        pt.y -= 0.5 * MAX_RANGE_Y;
+        pt.x -= 0.5 * MAX_LENGTH;
+        pt.y -= 0.5 * MAX_WIDTH;
         // z is needless to transform
     }
 
@@ -174,7 +174,7 @@ void DynamicVoxelFilter::pc_addressing(CloudINormalPtr pcl_voxel_pc)
         pcl_tmp_pt->points[0].normal_y = pt.normal_y;
         pcl_tmp_pt->points[0].normal_z = pt.normal_z;
 
-        if(voxel_id.x() < VOXEL_NUM_X && voxel_id.y() < VOXEL_NUM_Y && voxel_id.z() VOXEL_NUM_Z){
+        if(voxel_id.x() < VOXEL_NUM_X && voxel_id.y() < VOXEL_NUM_Y && voxel_id.z() < VOXEL_NUM_Z){
             *voxel_grid[voxel_id.x()][voxel_id.y()][voxel_id.z()].pcl_pc += *pcl_tmp_pt;
             voxel_grid[voxel_id.x()][voxel_id.y()][voxel_id.z()].occupation = Occupied;
         }
