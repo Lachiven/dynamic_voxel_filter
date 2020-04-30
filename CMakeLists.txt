@@ -153,6 +153,7 @@ add_definitions(
 ## Declare a C++ library
 add_library(libdynamic_voxel_filter
   # src/${PROJECT_NAME}/dynamic_voxel_filter.cpp
+  src/dynamic_voxel_filter.cpp
   src/dynamic_voxel_filter_serial.cpp
 )
 
@@ -182,6 +183,13 @@ add_dependencies(libdynamic_voxel_filter ${${PROJECT_NAME}_EXPORTED_TARGETS} ${c
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
+
+add_executable(dynamic_voxel_filter src/dynamic_voxel_filter.cpp)
+target_link_libraries(dynamic_voxel_filter
+	${catkin_LIBRARIES}
+	${PCL_LIBRARIES}
+)
+
 add_executable(dynamic_voxel_filter_serial src/dynamic_voxel_filter_serial.cpp)
 target_link_libraries(dynamic_voxel_filter_serial
 	${catkin_LIBRARIES}
