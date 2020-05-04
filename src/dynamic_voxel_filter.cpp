@@ -97,7 +97,7 @@ void DynamicVoxelFilter::formatting(void)
     initial_status.occupation = Unknown;
     initial_status.chronological_variance = 0.0;
     initial_status.dynamic_probability = 0.0;
-    initial_status.3rd_main_components.resize(0);
+    initial_status.third_main_components.resize(0);
 
     for(int ix = 0; ix < VOXEL_NUM_X; ix++){
         grid_1d.push_back(initial_status);
@@ -186,7 +186,7 @@ void DynamicVoxelFilter::third_main_component_estimation(void)
 			for(int iz = 0; iz < VOXEL_NUM_Z; iz++){
 				if(voxel_grid[ix][iy][iz].pcl_pc->points.size() >= 3){
 					Eigen::Matrix3f pca_vectors = eigen_estimation(voxel_grid[ix][iy][iz].pcl_pc);
-					voxel_grid[ix][iy][iz].3rd_main_components.push_back(pca_vectors.block(0, 2, 3, 1));
+					voxel_grid[ix][iy][iz].third_main_components.push_back(pca_vectors.block(0, 2, 3, 1));
 				    voxel_grid[ix][iy][iz].step += 1;
                 }
 			}
@@ -221,22 +221,22 @@ void DynamicVoxelFilter::chronological_variance_calculation(void)
         int step_cnt = voxel_grid[id.x()][id.y()][id.z()].step;
         int buffer_border = INITIAL_BUFFER + voxel_grid[id.x()][id.y()][id.z()].amp_buffer;
         if(step_cnt == 1){
-            voxel_grid[id.x()][id.y()][id.z()].3mc_mean = voxel_grid[id.x()][id.y()][id.z()].3rd_main_components[0];
+            voxel_grid[id.x()][id.y()][id.z()].chronological_variance = zero_vector;
         }
         else if(1 < step_cnt){
             Eigen::Vector3f tmp_sum_vector = zero_vector;
             Eigen::Vector3f tmp_sqr_sum_vector = zero_vector;
             Eigen::Vector3f tmp_plane_sum_vector = zero_vector;
             if(buffer_border < step_cnt){
-                voxel_grid[id.x()][id.y()][id.z()].3rd_main_components.erase(voxel_grid[id.x()][id.y()][id.z()].3rd_main_components.begin());
+                voxel_grid[id.x()][id.y()][id.z()].third_main_components.erase(voxel_grid[id.x()][id.y()][id.z()].third_main_components.begin());
                 step_cnt--;
             }
-            for(auto& 3mc : voxel_grid[id.x()][id.y()][id.z()].3rd_main_components){
-                tmp_sum_vector += 3mc;
+            for(auto& third_mc : voxel_grid[id.x()][id.y()][id.z()].third_main_components){
+                tmp_sum_vector += third_mc;
             }
-            Eigen::Vector3f 3mc_mean = tmp_sum_vector / step_cnt;
-            for(auto& 3mc : voxel_grid[id.x()][id.y()][id.z()].3rd_main_components){
-                Eigen::vector3f tmp_vector = 3mc - 3mc_mean;
+            Eigen::Vector3f third_mc_mean = tmp_sum_vector / step_cnt;
+            for(auto& third_mc : voxel_grid[id.x()][id.y()][id.z()].third_main_components){
+                Eigen::vector3f tmp_vector = third_mc - third_mc_mean;
                 tmp_sqr_sum_vector += hadamard_product(tmp_vector, tmp_vector);
                 Eigen::vector3f tmp_plane_vector;
                 tmp_plane_vector.x() = tmp_vector.x() * tmp_vector.y();
@@ -244,10 +244,10 @@ void DynamicVoxelFilter::chronological_variance_calculation(void)
                 tmp_plane_vector.z() = tmp_vector.z() * tmp_vector.x();
                 tmp_plane_sum_vector += tmp_plane_vector;
             }
-            Eigen::Vector3f 3mc_var = tmp_sqr_sum_vector / step_cnt;
-            Eigen::Vector3f 3mc_cov = tmp_plane_sum_vector / step_cnt;
-            voxel_grid[id.x()][id.y()][id.z()].chronological_variance = 3mc_var.x() + 3mc_var.y() + 3mc_var.z()
-                                                                        + 2*(3mc_cov.x() + 3mc_cov.y() + 3mc_cov.z());
+            Eigen::Vector3f third_mc_var = tmp_sqr_sum_vector / step_cnt;
+            Eigen::Vector3f third_mc_cov = tmp_plane_sum_vector / step_cnt;
+            voxel_grid[id.x()][id.y()][id.z()].chronological_variance = third_mc_var.x() + third_mc_var.y() + third_mc_var.z()
+                                                                        + 2*(third_mc_cov.x() + third_mc_cov.y() + third_mc_cov.z());
         }
     }
 }

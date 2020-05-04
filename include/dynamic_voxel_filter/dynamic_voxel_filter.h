@@ -100,10 +100,7 @@ class DynamicVoxelFilter
             float occupation;
             float chronological_variance;
             float dynamic_probability;
-            std::vector<Eigen::Vector3f> 3rd_main_components;
-            Eigen::Vector3f 3mc_mean; // x, y, z
-            Eigen::Vector3f 3mc_var; // x, y, z
-            Eigen::Vector3f 3mc_cov; // xy, yz, zx
+            std::vector<Eigen::Vector3f> third_main_components;
         };
 
         std::vector<std::vector<std::vector<Status> > > voxel_grid;
