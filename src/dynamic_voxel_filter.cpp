@@ -221,7 +221,7 @@ void DynamicVoxelFilter::chronological_variance_calculation(void)
         int step_cnt = voxel_grid[id.x()][id.y()][id.z()].step;
         int buffer_border = INITIAL_BUFFER + voxel_grid[id.x()][id.y()][id.z()].amp_buffer;
         if(step_cnt == 1){
-            voxel_grid[id.x()][id.y()][id.z()].chronological_variance = zero_vector;
+            voxel_grid[id.x()][id.y()][id.z()].chronological_variance = 0.0;
         }
         else if(1 < step_cnt){
             Eigen::Vector3f tmp_sum_vector = zero_vector;
@@ -236,9 +236,9 @@ void DynamicVoxelFilter::chronological_variance_calculation(void)
             }
             Eigen::Vector3f third_mc_mean = tmp_sum_vector / step_cnt;
             for(auto& third_mc : voxel_grid[id.x()][id.y()][id.z()].third_main_components){
-                Eigen::vector3f tmp_vector = third_mc - third_mc_mean;
+                Eigen::Vector3f tmp_vector = third_mc - third_mc_mean;
                 tmp_sqr_sum_vector += hadamard_product(tmp_vector, tmp_vector);
-                Eigen::vector3f tmp_plane_vector;
+                Eigen::Vector3f tmp_plane_vector;
                 tmp_plane_vector.x() = tmp_vector.x() * tmp_vector.y();
                 tmp_plane_vector.y() = tmp_vector.y() * tmp_vector.z();
                 tmp_plane_vector.z() = tmp_vector.z() * tmp_vector.x();
