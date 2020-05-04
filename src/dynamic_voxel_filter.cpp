@@ -15,6 +15,7 @@ DynamicVoxelFilter::DynamicVoxelFilter(void)
 : nh("~")
 {
     nh.param("Hz", Hz, 100.0);
+    nh.param("INITIAL_BUFFER", INITIAL_BUFFER, 10);
     nh.param("MAX_LENGTH", MAX_LENGTH, 50.0); // ->X
     nh.param("MAX_WIDTH", MAX_WIDTH, 50.0); // ->Y
     nh.param("MAX_HEIGHT", MAX_HEIGHT, 2.0); // ->Z
@@ -92,14 +93,11 @@ void DynamicVoxelFilter::formatting(void)
     Status initial_status;
     initial_status.pcl_pc->points.resize(0);
     initial_status.step = 0;
+    initial_status.amp_buffer = 0;
     initial_status.occupation = Unknown;
     initial_status.chronological_variance = 0.0;
     initial_status.dynamic_probability = 0.0;
-    initial_status.pre_3rd_main_component = zero_vector;
-    initial_status.new_3rd_main_component = zero_vector;
-    initial_status.pre_3mc_mean = zero_vector;
-    initial_status.pre_3mc_var = zero_vector;
-    initial_status.pre_3mc_cov = zero_vector;
+    initial_status.3rd_main_components.resize(0);
 
     for(int ix = 0; ix < VOXEL_NUM_X; ix++){
         grid_1d.push_back(initial_status);
@@ -188,7 +186,7 @@ void DynamicVoxelFilter::third_main_component_estimation(void)
 			for(int iz = 0; iz < VOXEL_NUM_Z; iz++){
 				if(voxel_grid[ix][iy][iz].pcl_pc->points.size() >= 3){
 					Eigen::Matrix3f pca_vectors = eigen_estimation(voxel_grid[ix][iy][iz].pcl_pc);
-					voxel_grid[ix][iy][iz].new_3rd_main_component = pca_vectors.block(0, 2, 3, 1);
+					voxel_grid[ix][iy][iz].3rd_main_components.push_back(pca_vectors.block(0, 2, 3, 1));
 				    voxel_grid[ix][iy][iz].step += 1;
                 }
 			}
@@ -220,49 +218,56 @@ Eigen::Matrix3f DynamicVoxelFilter::eigen_estimation(CloudINormalPtr pcl_voxel_p
 void DynamicVoxelFilter::chronological_variance_calculation(void)
 {
     for(auto& id : voxel_id_list){
-        if(voxel_grid[id.x()][id.y()][id.z()].step == 1){
-            voxel_grid[id.x()][id.y()][id.z()].pre_3mc_mean = voxel_grid[id.x()][id.y()][id.z()].new_3rd_main_component;
-            voxel_grid[id.x()][id.y()][id.z()].pre_3rd_main_component = voxel_grid[id.x()][id.y()][id.z()].new_3rd_main_component;
+        int step_cnt = voxel_grid[id.x()][id.y()][id.z()].step;
+        int buffer_border = INITIAL_BUFFER + voxel_grid[id.x()][id.y()][id.z()].amp_buffer;
+        if(step_cnt == 1){
+            voxel_grid[id.x()][id.y()][id.z()].3mc_mean = voxel_grid[id.x()][id.y()][id.z()].3rd_main_components[0];
         }
-        else if(voxel_grid[id.x()][id.y()][id.z()].step > 1){
-            Eigen::Vector3f new_3mc_ = voxel_grid[id.x()][id.y()][id.z()].new_3rd_main_component;
-            
-            int n = voxel_grid[id.x()][id.y()][id.z()].step;
-            Eigen::Vector3f pre_3mc_mean_ = voxel_grid[id.x()][id.y()][id.z()].pre_3mc_mean;
-            Eigen::Vector3f new_3mc_mean_ = ((n-1)*pre_3mc_mean_ + new_3mc_) / n;
-            
-            Eigen::Vector3f new_3mc_sqr = hadamard_product(new_3mc_);
-            Eigen::Vector3f pre_3mc_mean_sqr = hadamard_product(pre_3mc_mean_);
-            Eigen::Vector3f new_3mc_mean_sqr = hadamard_product(new_3mc_mean_);
-            Eigen::Vector3f pre_3mc_var_ = voxel_grid[id.x()][id.y()][id.z()].pre_3mc_var;
-            Eigen::Vector3f pre_3mc_var_sqr = hadamard_product(pre_3mc_var_);
-            Eigen::Vector3f new_3mc_var_ = ((n-1)*(pre_3mc_var_sqr + pre_3mc_mean_sqr) + new_3mc_sqr)/n - new_3mc_mean_sqr;
-            
-            Eigen::Vector3f pre_3mc_cov_ = voxel_grid[id.x()][id.y()][id.z()].pre_3mc_cov;
-            Eigen::Vector3f new_3mc_cov_;
-            new_3mc_cov_(xy) = (new_3mc_.x() - pre_3mc_mean_.x())*(new_3mc_.y() - pre_3mc_mean_.y())*(n-1)/(n*n) + pre_3mc_cov_(xy)*(n-1)/n;
-            new_3mc_cov_(yz) = (new_3mc_.y() - pre_3mc_mean_.y())*(new_3mc_.z() - pre_3mc_mean_.z())*(n-1)/(n*n) + pre_3mc_cov_(yz)*(n-1)/n;
-            new_3mc_cov_(zx) = (new_3mc_.z() - pre_3mc_mean_.z())*(new_3mc_.x() - pre_3mc_mean_.x())*(n-1)/(n*n) + pre_3mc_cov_(zx)*(n-1)/n;
-
-            voxel_grid[id.x()][id.y()][id.z()].chronological_variance = new_3mc_var_.x() + new_3mc_var_.y() + new_3mc_var_.z()
-                                                                        + 2*(new_3mc_cov_(xy) + new_3mc_cov_(yz) + new_3mc_cov_(zx));
-
-            voxel_grid[id.x()][id.y()][id.z()].pre_3rd_main_component = new_3mc_;
-            voxel_grid[id.x()][id.y()][id.z()].pre_3mc_mean = new_3mc_mean_;
-            voxel_grid[id.x()][id.y()][id.z()].pre_3mc_var = new_3mc_var_;
-            voxel_grid[id.x()][id.y()][id.z()].pre_3mc_cov = new_3mc_cov_;
+        else if(1 < step_cnt){
+            Eigen::Vector3f tmp_sum_vector = zero_vector;
+            Eigen::Vector3f tmp_sqr_sum_vector = zero_vector;
+            Eigen::Vector3f tmp_plane_sum_vector = zero_vector;
+            if(buffer_border < step_cnt){
+                voxel_grid[id.x()][id.y()][id.z()].3rd_main_components.erase(voxel_grid[id.x()][id.y()][id.z()].3rd_main_components.begin());
+                step_cnt--;
+            }
+            for(auto& 3mc : voxel_grid[id.x()][id.y()][id.z()].3rd_main_components){
+                tmp_sum_vector += 3mc;
+            }
+            Eigen::Vector3f 3mc_mean = tmp_sum_vector / step_cnt;
+            for(auto& 3mc : voxel_grid[id.x()][id.y()][id.z()].3rd_main_components){
+                Eigen::vector3f tmp_vector = 3mc - 3mc_mean;
+                tmp_sqr_sum_vector += hadamard_product(tmp_vector, tmp_vector);
+                Eigen::vector3f tmp_plane_vector;
+                tmp_plane_vector.x() = tmp_vector.x() * tmp_vector.y();
+                tmp_plane_vector.y() = tmp_vector.y() * tmp_vector.z();
+                tmp_plane_vector.z() = tmp_vector.z() * tmp_vector.x();
+                tmp_plane_sum_vector += tmp_plane_vector;
+            }
+            Eigen::Vector3f 3mc_var = tmp_sqr_sum_vector / step_cnt;
+            Eigen::Vector3f 3mc_cov = tmp_plane_sum_vector / step_cnt;
+            voxel_grid[id.x()][id.y()][id.z()].chronological_variance = 3mc_var.x() + 3mc_var.y() + 3mc_var.z()
+                                                                        + 2*(3mc_cov.x() + 3mc_cov.y() + 3mc_cov.z());
         }
     }
 }
 
 
-Eigen::Vector3f DynamicVoxelFilter::hadamard_product(Eigen::Vector3f in){
+Eigen::Vector3f DynamicVoxelFilter::hadamard_product(Eigen::Vector3f in1, Eigen::Vector3f in2){
     Eigen::Vector3f output_vector;
-    output_vector << in.x()*in.x(), in.y()*in.y(), in.z()*in.z();
+    output_vector << in1.x()*in2.x(), in1.y()*in2.y(), in1.z()*in2.z();
     
     return output_vector;
 }
 
 
-
-
+/*
+Eigen::Vector3f DynamicVoxelFilter::hadamard_division(Eigen::Vector3f numerator, Eigen::Vector3f denominator){ // 分子, 分母
+    Eigen::Vector3f output_vector;
+    output_vector.x() = numerator.x() / denominator.x();
+    output_vector.y() = numerator.y() / denominator.y();
+    output_vector.z() = numerator.z() / denominator.z();
+    
+    return output_vector;
+}
+*/
